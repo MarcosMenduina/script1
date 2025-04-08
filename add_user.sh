@@ -56,7 +56,8 @@ add_user() {
                 echo "$password" | passwd "$username"
                 ;;
             "NetBSD")
-                useradd -m -s /bin/sh -p "$(generate_password "$username" "$password")" "$username"
+                useradd -m -s /bin/sh "$username"
+		echo "$password" | passwd "$username"
                 ;;
             "FreeBSD")
                 pw useradd "$username" -m -s /bin/sh
