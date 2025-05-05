@@ -32,7 +32,7 @@ add_user() {
         # Sistemas Linux (Devuan, Fedora, Ubuntu)
         if command_exists mkpasswd; then
             encrypted_password=$(generate_password "$username" "$password")
-            useradd -m -s /bin/bash -p "$encrypted_password" "$username"
+            sudo useradd -m -s /bin/bash -p "$encrypted_password" "$username"
         else
             # Método alternativo si mkpasswd no está disponible
             useradd -m -s /bin/bash "$username"
@@ -53,11 +53,13 @@ add_user() {
         case "$os_name" in
             "OpenBSD")
                 useradd -m -s /bin/ksh "$username"
-                echo "$password" | passwd "$username"
+                encrypted=$(encrypt -b 8 "$password")
+		usermod -p "$encrypted" "$username"
                 ;;
             "NetBSD")
-                useradd -m -s /bin/sh "$username"
-		echo "$password" | passwd "$username"
+    		useradd -m -s /bin/sh "$username"
+    		encrypted=$(openssl passwd -1 "$password")
+    		usermod -p "$encrypted" "$username"
                 ;;
             "FreeBSD")
                 pw useradd "$username" -m -s /bin/sh
