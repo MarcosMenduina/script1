@@ -21,6 +21,17 @@ generate_password() {
     fi
 }
 
+# Obtener la ruta absoluta de bash
+get_bash_path() {
+    if command_exists bash; then
+        which bash
+    else
+        echo "/bin/bash"  # fallback
+    fi
+}
+
+BASH_PATH=$(get_bash_path)
+
 # Añadir un usuario según SO
 add_user() {
     username=$1
@@ -32,15 +43,15 @@ add_user() {
         # Sistemas Linux (Devuan, Fedora, Ubuntu)
         if command_exists mkpasswd; then
             encrypted_password=$(generate_password "$username" "$password")
-            sudo useradd -m -s /bin/bash -p "$encrypted_password" "$username"
+            sudo useradd -m -s "$BASH_PATH" -p "$encrypted_password" "$username"
         else
             # Método alternativo si mkpasswd no está disponible
-            useradd -m -s /bin/bash "$username"
+            useradd -m -s "$BASH_PATH" "$username"
             echo "$username:$password" | chpasswd
         fi
     elif [ -f /etc/release ] && grep -q "Solaris" /etc/release; then
         # Solaris
-        useradd -d "/export/home/$username" -m -s /bin/bash "$username"
+        useradd -d "/export/home/$username" -m -s "$BASH_PATH" "$username"
         # Para Solaris, podemos usar el script expect
         if [ -f ./pass.expect ]; then
             ./pass.expect "$username" "$password"
@@ -52,17 +63,17 @@ add_user() {
         os_name=$(uname -s)
         case "$os_name" in
             "OpenBSD")
-                useradd -m -s /bin/ksh "$username"
+                useradd -m -s "$BASH_PATH" "$username"
                 encrypted=$(encrypt -b 8 "$password")
 		usermod -p "$encrypted" "$username"
                 ;;
             "NetBSD")
-    		useradd -m -s /bin/sh "$username"
+    		useradd -m -s "$BASH_PATH" "$username"
     		encrypted=$(openssl passwd -1 "$password")
     		usermod -p "$encrypted" "$username"
                 ;;
             "FreeBSD")
-                pw useradd "$username" -m -s /bin/sh
+                pw useradd "$username" -m -s "$BASH_PATH"
                 echo "$password" | pw usermod "$username" -h 0
                 ;;
             *)
