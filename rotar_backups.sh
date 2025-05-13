@@ -1,27 +1,15 @@
 #!/bin/bash
 
-BACKUP_DIR="/var/backups/mensuales"
-ARCHIVO="/var/backups/mensuales_$(date +%Y-%m).tar"
+# Ruta del archivo fijo que se rotará
+BACKUP_DIR="/var/backups"
+ARCHIVE_DIR="$BACKUP_DIR/mensuales"
+ARCHIVO_FIJO="$ARCHIVE_DIR/backup-mensual.tar"
 
-# Crear el directorio si no existe
-mkdir -p "$BACKUP_DIR"
+mkdir -p "$ARCHIVE_DIR"
 
-# Crear archivo mensual de backups
-tar -cvf $ARCHIVO $BACKUP_DIR/*.tar
+# Sobrescribe el anterior (porque logrotate lo rotará)
+tar -cf "$ARCHIVO_FIJO" $(find "$BACKUP_DIR" -type f -name "*.tar.bz2" -newermt "$(date +%Y-%m-01)" ! -newermt "$(date -d 'next month' +%Y-%m-01)")
 
-# Borrar backups con más de 1 año
-find $BACKUP_DIR -name "mensuales_*.tar" -mtime +365 -delete
+# Ejecutar logrotate para rotar ese archivo
+logrotate -f /etc/logrotate.d/backup-mensual
 
-# Configurar logrotate
-cat <<EOF > /etc/logrotate.d/backup_archives
-$ARCHIVE {
-    monthly
-    rotate 12
-    missingok
-    notifempty
-    copytruncate
-}
-EOF
-
-# Ejecutar logrotate
-logrotate -f /etc/logrotate.d/backup_archives
